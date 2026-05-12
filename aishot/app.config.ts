@@ -48,6 +48,14 @@ const config: ExpoConfig = {
           'AiShot transcribes your voice on-device to understand the shot you want.',
       },
     ],
+    [
+      'expo-media-library',
+      {
+        photosPermission: 'AiShot saves your shots to your photo library.',
+        savePhotosPermission: 'AiShot saves your shots to your photo library.',
+        isAccessMediaLocationEnabled: false,
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

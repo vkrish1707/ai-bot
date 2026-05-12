@@ -17,6 +17,7 @@ export default function RootLayout() {
           name="modal/intent"
           options={{ presentation: 'modal', headerShown: false }}
         />
+        <Stack.Screen name="session/[id]" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );
