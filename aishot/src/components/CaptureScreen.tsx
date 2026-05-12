@@ -11,10 +11,14 @@ import {
   selectBestPhotoFormat,
 } from '@/services/camera/CameraService';
 import { useCameraStore } from '@/stores/cameraStore';
+import { useVisionFeatures } from '@/services/vision/useVisionFeatures';
+import { useHorizon } from '@/services/sensors/useHorizon';
 import { AutoPilotPill } from './CameraControls/AutoPilotPill';
 import { ManualDials } from './CameraControls/ManualDials';
 import { ModeToggle } from './CameraControls/ModeToggle';
 import { ShutterButton } from './CameraControls/ShutterButton';
+import { SkiaOverlay } from './SkiaOverlay/SkiaOverlay';
+import { DebugHud } from './SkiaOverlay/DebugHud';
 
 export function CaptureScreen() {
   const permissions = useCameraPermissions();
@@ -25,6 +29,8 @@ export function CaptureScreen() {
   const setCapabilities = useCameraStore((s) => s.setCapabilities);
 
   const format = useMemo(() => selectBestPhotoFormat(device), [device]);
+  const { frameProcessor, shared } = useVisionFeatures();
+  const horizon = useHorizon();
 
   useEffect(() => {
     if (format) setCapabilities(capabilitiesFromFormat(format));
@@ -61,6 +67,20 @@ export function CaptureScreen() {
         video
         iso={settings.iso}
         exposure={settings.exposureCompensation}
+        frameProcessor={frameProcessor}
+        pixelFormat="yuv"
+      />
+      <SkiaOverlay
+        faces={shared.faces}
+        frameSize={shared.frameSize}
+        horizon={horizon}
+      />
+      <DebugHud
+        fps={shared.fps}
+        faces={shared.faces}
+        histogram={shared.histogram}
+        motionScore={shared.motionScore}
+        horizon={horizon}
       />
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <View style={styles.topRow}>
