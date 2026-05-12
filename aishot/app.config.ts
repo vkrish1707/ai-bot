@@ -1,5 +1,8 @@
 import type { ExpoConfig } from 'expo/config';
 
+const PROXY_URL = process.env.EXPO_PUBLIC_PROXY_URL ?? 'http://localhost:8787';
+const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? '';
+
 const config: ExpoConfig = {
   name: 'AiShot',
   slug: 'aishot',
@@ -8,9 +11,21 @@ const config: ExpoConfig = {
   scheme: 'aishot',
   userInterfaceStyle: 'dark',
   newArchEnabled: true,
+  icon: './assets/icon.png',
+  splash: {
+    image: './assets/splash.png',
+    resizeMode: 'cover',
+    backgroundColor: '#000000',
+  },
+  runtimeVersion: { policy: 'appVersion' },
+  updates: EAS_PROJECT_ID
+    ? { url: `https://u.expo.dev/${EAS_PROJECT_ID}` }
+    : undefined,
   ios: {
     bundleIdentifier: 'com.aishot.app',
     supportsTablet: false,
+    buildNumber: '1',
+    config: { usesNonExemptEncryption: false },
     infoPlist: {
       NSCameraUsageDescription:
         'AiShot uses the camera so the AI photographer can see your scene, frame your shot, and capture photos.',
@@ -21,10 +36,19 @@ const config: ExpoConfig = {
       NSSpeechRecognitionUsageDescription:
         'AiShot transcribes your voice on-device to understand what you want to capture.',
       ITSAppUsesNonExemptEncryption: false,
+      UIBackgroundModes: [],
     },
   },
   plugins: [
     'expo-router',
+    [
+      'expo-splash-screen',
+      {
+        image: './assets/splash.png',
+        backgroundColor: '#000000',
+        resizeMode: 'cover',
+      },
+    ],
     [
       'react-native-vision-camera',
       {
@@ -61,7 +85,8 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   extra: {
-    proxyUrl: process.env.EXPO_PUBLIC_PROXY_URL ?? 'http://localhost:8787',
+    proxyUrl: PROXY_URL,
+    ...(EAS_PROJECT_ID ? { eas: { projectId: EAS_PROJECT_ID } } : {}),
   },
 };
 
