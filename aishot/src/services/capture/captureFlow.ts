@@ -20,12 +20,15 @@ export async function performCapture(camera: Camera | null): Promise<number | nu
 
   const settings = useCameraStore.getState().settings;
   const session = useSessionStore.getState();
+  const ai = useAiStore.getState();
 
+  ai.pushTicker({ kind: 'adjust', text: 'capturing' });
   const photo = await camera.takePhoto({ enableShutterSound: false });
   const uri = photo.path.startsWith('file://') ? photo.path : `file://${photo.path}`;
 
   let assetId: string | null = null;
   let localUri: string | null = uri;
+  let mediaLibraryDenied = false;
   try {
     const granted = await ensureMediaLibraryPermission();
     if (granted) {
@@ -33,6 +36,8 @@ export async function performCapture(camera: Camera | null): Promise<number | nu
       assetId = asset.id;
       const info = await MediaLibrary.getAssetInfoAsync(asset.id).catch(() => null);
       if (info?.localUri) localUri = info.localUri;
+    } else {
+      mediaLibraryDenied = true;
     }
   } catch {
     // best-effort: keep local uri only
@@ -53,7 +58,10 @@ export async function performCapture(camera: Camera | null): Promise<number | nu
     // critique failures are silent; the row stays without one
   });
 
-  useAiStore.getState().pushTicker({ kind: 'say', text: 'saved' });
+  ai.pushTicker({
+    kind: 'say',
+    text: mediaLibraryDenied ? 'saved locally (no photos access)' : 'saved',
+  });
   return captureId;
 }
 

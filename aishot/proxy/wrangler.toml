@@ -3,19 +3,38 @@ main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Defaults apply to `wrangler dev`. Production overrides go under
+# [env.production]. Deploy with: wrangler deploy --env production
+
 [vars]
 DAILY_CAP_USD = "2"
 RATE_LIMIT_PER_SEC = "1"
 DEFAULT_MODEL = "claude-sonnet-4-6"
 OPUS_MODEL = "claude-opus-4-7"
 
-# KV namespace for device tokens + daily spend counters.
 # Create with: wrangler kv namespace create AISHOT_KV
-# Then replace the id values below.
+# Then paste the ids below. preview_id is used by `wrangler dev`.
 [[kv_namespaces]]
 binding = "AISHOT_KV"
 id = "REPLACE_WITH_KV_ID"
 preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
 
-# Secrets (set via `wrangler secret put`):
-#   ANTHROPIC_API_KEY
+# Set with: wrangler secret put ANTHROPIC_API_KEY
+# (and again with --env production for the prod environment)
+
+[env.production]
+name = "aishot-proxy-prod"
+# Bind a custom domain via the Cloudflare dashboard, or use a route:
+# routes = [
+#   { pattern = "proxy.aishot.app/*", custom_domain = true }
+# ]
+
+[env.production.vars]
+DAILY_CAP_USD = "2"
+RATE_LIMIT_PER_SEC = "1"
+DEFAULT_MODEL = "claude-sonnet-4-6"
+OPUS_MODEL = "claude-opus-4-7"
+
+[[env.production.kv_namespaces]]
+binding = "AISHOT_KV"
+id = "REPLACE_WITH_PROD_KV_ID"
