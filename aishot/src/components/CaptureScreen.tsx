@@ -13,6 +13,8 @@ import { useVisionFeatures } from '@/services/vision/useVisionFeatures';
 import { useHorizon } from '@/services/sensors/useHorizon';
 import { useOrchestrator } from '@/services/orchestrator/useOrchestrator';
 import { useVoicePipeline } from '@/services/voice/useVoicePipeline';
+import { useSessionPersistence } from '@/services/session/useSessionPersistence';
+import { performCapture } from '@/services/capture/captureFlow';
 import { AutoPilotPill } from './CameraControls/AutoPilotPill';
 import { ManualDials } from './CameraControls/ManualDials';
 import { ModeToggle } from './CameraControls/ModeToggle';
@@ -42,8 +44,7 @@ export function CaptureScreen() {
   }, [format, setCapabilities]);
 
   const handleCapture = useCallback(async () => {
-    if (!cameraRef.current) return;
-    await cameraRef.current.takePhoto({ enableShutterSound: false });
+    await performCapture(cameraRef.current);
   }, []);
 
   useOrchestrator({
@@ -54,6 +55,7 @@ export function CaptureScreen() {
   });
 
   useVoicePipeline();
+  useSessionPersistence();
 
   if (!permissions.ready) {
     return <PermissionGate state={permissions} />;
