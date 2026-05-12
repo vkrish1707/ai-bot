@@ -1,0 +1,21 @@
+name = "aishot-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+DAILY_CAP_USD = "2"
+RATE_LIMIT_PER_SEC = "1"
+DEFAULT_MODEL = "claude-sonnet-4-6"
+OPUS_MODEL = "claude-opus-4-7"
+
+# KV namespace for device tokens + daily spend counters.
+# Create with: wrangler kv namespace create AISHOT_KV
+# Then replace the id values below.
+[[kv_namespaces]]
+binding = "AISHOT_KV"
+id = "REPLACE_WITH_KV_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+
+# Secrets (set via `wrangler secret put`):
+#   ANTHROPIC_API_KEY

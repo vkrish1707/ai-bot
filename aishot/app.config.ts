@@ -43,6 +43,9 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+  extra: {
+    proxyUrl: process.env.EXPO_PUBLIC_PROXY_URL ?? 'http://localhost:8787',
+  },
 };
 
 export default config;
