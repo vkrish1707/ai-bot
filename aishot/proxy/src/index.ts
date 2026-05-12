@@ -5,6 +5,7 @@ import { chatRoute } from './routes/chat';
 import { coachRoute } from './routes/coach';
 import { critiqueRoute } from './routes/critique';
 import { budgetRoute } from './routes/budget';
+import { intentRoute } from './routes/intent';
 
 const app = new Hono<AppEnv>();
 
@@ -15,6 +16,7 @@ app.route('/v1/chat', chatRoute);
 app.route('/v1/coach', coachRoute);
 app.route('/v1/critique', critiqueRoute);
 app.route('/v1/budget', budgetRoute);
+app.route('/v1/intent', intentRoute);
 
 app.onError((err, c) => {
   console.error('unhandled', err);

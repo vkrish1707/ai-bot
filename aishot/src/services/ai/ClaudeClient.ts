@@ -66,6 +66,39 @@ export class ClaudeClient {
     return readCoachStream(res);
   }
 
+  async extractIntent(args: {
+    sessionId: string;
+    transcript: string;
+    currentIntent?: Intent;
+  }): Promise<{ intent: Intent; reply: string }> {
+    const res = await this.post('/v1/intent', {
+      session_id: args.sessionId,
+      transcript: args.transcript,
+      current_intent: args.currentIntent,
+    });
+    let intent: Intent = args.currentIntent ?? {};
+    let reply = '';
+    for await (const evt of readCoachStream(res)) {
+      if (evt.kind === 'tool' && evt.call.name === 'set_intent') {
+        const input = evt.call.input as {
+          subject?: string;
+          mood?: string;
+          style?: string;
+          constraints?: string;
+          reply?: string;
+        };
+        intent = {
+          subject: input.subject ?? intent.subject,
+          mood: input.mood ?? intent.mood,
+          style: input.style ?? intent.style,
+          constraints: input.constraints ?? intent.constraints,
+        };
+        if (input.reply) reply = input.reply;
+      }
+    }
+    return { intent, reply };
+  }
+
   async streamCritique(args: CritiqueArgs): Promise<AsyncIterable<string>> {
     const res = await this.post('/v1/critique', {
       session_id: args.sessionId,

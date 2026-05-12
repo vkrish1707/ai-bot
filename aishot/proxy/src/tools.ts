@@ -111,3 +111,38 @@ export const COACH_TOOLS = [
     },
   },
 ] as const;
+
+export const EXTRACT_INTENT_TOOL = {
+  name: 'set_intent',
+  description:
+    'Set the structured shooting intent for the session, distilled from what the user said. ' +
+    'Fill only fields the user actually expressed; leave others undefined. ' +
+    "Also include a short spoken acknowledgement in 'reply' (≤ 8 words).",
+  input_schema: {
+    type: 'object',
+    properties: {
+      subject: {
+        type: 'string',
+        description: 'What is being photographed, e.g. "my dog", "the bridge"',
+      },
+      mood: {
+        type: 'string',
+        description: 'The emotional tone, e.g. "moody", "bright", "candid"',
+      },
+      style: {
+        type: 'string',
+        description: 'Aesthetic, e.g. "film", "documentary", "portrait"',
+      },
+      constraints: {
+        type: 'string',
+        description: 'Hard constraints, e.g. "handheld, low light, no flash"',
+      },
+      reply: {
+        type: 'string',
+        description: 'Short spoken confirmation, ≤ 8 words',
+      },
+    },
+    required: ['reply'],
+    additionalProperties: false,
+  },
+} as const;

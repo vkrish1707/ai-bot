@@ -17,6 +17,7 @@ export type AnthropicRequest = {
   messages: AnthropicMessage[];
   temperature?: number;
   tools?: unknown[];
+  tool_choice?: Record<string, unknown>;
 };
 
 export async function relayAnthropic(

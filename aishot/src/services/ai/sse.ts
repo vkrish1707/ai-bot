@@ -1,9 +1,9 @@
-import type { CoachToolCall } from './tools';
-
 export type SseEvent = {
   event?: string;
   data: string;
 };
+
+export type RawToolCall = { name: string; input: unknown };
 
 export type ClaudeEvent =
   | { type: 'content_block_delta'; delta: { type: 'text_delta'; text: string } }
@@ -78,7 +78,7 @@ export async function* readTextDeltas(
 
 export type CoachStreamEvent =
   | { kind: 'text'; text: string }
-  | { kind: 'tool'; call: CoachToolCall }
+  | { kind: 'tool'; call: RawToolCall }
   | { kind: 'stop'; reason?: string };
 
 type ContentBlockStartEvent = {
@@ -144,10 +144,7 @@ export async function* readCoachStream(
       if (name && json !== undefined) {
         const parsed = safeParseJson(json);
         if (parsed !== undefined) {
-          yield {
-            kind: 'tool',
-            call: { name, input: parsed } as unknown as CoachToolCall,
-          };
+          yield { kind: 'tool', call: { name, input: parsed } };
         }
       }
     } else if (evt.type === 'message_delta') {
