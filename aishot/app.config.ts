@@ -39,6 +39,15 @@ const config: ExpoConfig = {
         ios: { deploymentTarget: '15.1' },
       },
     ],
+    [
+      'expo-speech-recognition',
+      {
+        microphonePermission:
+          'AiShot listens for your voice so you can tell the photographer what you want.',
+        speechRecognitionPermission:
+          'AiShot transcribes your voice on-device to understand the shot you want.',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

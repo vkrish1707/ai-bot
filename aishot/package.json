@@ -27,6 +27,8 @@
     "expo-sensors": "~14.0.0",
     "expo-image-manipulator": "~13.0.0",
     "expo-crypto": "~14.0.0",
+    "expo-speech": "~13.0.0",
+    "expo-speech-recognition": "^1.0.0",
     "@shopify/react-native-skia": "^1.5.0",
     "react-native-vision-camera-face-detector": "^1.7.0",
     "react": "19.0.0",

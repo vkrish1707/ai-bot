@@ -74,6 +74,13 @@ export const critiqueBody = z.object({
   }),
 });
 
+export const intentBody = z.object({
+  session_id: z.string().min(1).max(128),
+  transcript: z.string().min(1).max(2000),
+  current_intent: intent.optional(),
+});
+
 export type ChatBody = z.infer<typeof chatBody>;
 export type CoachBody = z.infer<typeof coachBody>;
 export type CritiqueBody = z.infer<typeof critiqueBody>;
+export type IntentBody = z.infer<typeof intentBody>;

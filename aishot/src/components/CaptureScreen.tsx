@@ -12,6 +12,7 @@ import { useCameraStore } from '@/stores/cameraStore';
 import { useVisionFeatures } from '@/services/vision/useVisionFeatures';
 import { useHorizon } from '@/services/sensors/useHorizon';
 import { useOrchestrator } from '@/services/orchestrator/useOrchestrator';
+import { useVoicePipeline } from '@/services/voice/useVoicePipeline';
 import { AutoPilotPill } from './CameraControls/AutoPilotPill';
 import { ManualDials } from './CameraControls/ManualDials';
 import { ModeToggle } from './CameraControls/ModeToggle';
@@ -20,6 +21,8 @@ import { SkiaOverlay } from './SkiaOverlay/SkiaOverlay';
 import { DebugHud } from './SkiaOverlay/DebugHud';
 import { AdjustmentTicker } from './Hud/AdjustmentTicker';
 import { IntentChip } from './Hud/IntentChip';
+import { VoiceOrb } from './Hud/VoiceOrb';
+import { TranscriptBubble } from './Hud/TranscriptBubble';
 
 export function CaptureScreen() {
   const permissions = useCameraPermissions();
@@ -49,6 +52,8 @@ export function CaptureScreen() {
     horizon,
     onAutoFire: handleCapture,
   });
+
+  useVoicePipeline();
 
   if (!permissions.ready) {
     return <PermissionGate state={permissions} />;
@@ -83,6 +88,7 @@ export function CaptureScreen() {
         horizon={horizon}
       />
       <AdjustmentTicker />
+      <TranscriptBubble />
       <DebugHud
         fps={shared.fps}
         faces={shared.faces}
@@ -94,7 +100,10 @@ export function CaptureScreen() {
         <View style={styles.topRow}>
           <ModeToggle />
           <IntentChip />
-          <AutoPilotPill />
+          <View style={styles.topRight}>
+            <VoiceOrb />
+            <AutoPilotPill />
+          </View>
         </View>
         <View style={styles.bottom}>
           <ManualDials animated={animated} />
@@ -132,6 +141,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
+    gap: 8,
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   bottom: { paddingBottom: 8 },

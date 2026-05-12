@@ -1,7 +1,15 @@
 import { useEffect, useRef } from 'react';
 import type { Camera } from 'react-native-vision-camera';
 import { claudeClient } from '@/services/ai/ClaudeClient';
-import type { CoachToolCall } from '@/services/ai/tools';
+import type {
+  AdjustCameraInput,
+  LockSubjectInput,
+  ReframeHintInput,
+  SayInput,
+  ShootNowInput,
+  WaitInput,
+} from '@/services/ai/tools';
+import type { RawToolCall } from '@/services/ai/sse';
 import { useAiStore } from '@/stores/aiStore';
 import { useCameraStore } from '@/stores/cameraStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -98,22 +106,23 @@ export function useOrchestrator({ cameraRef, vision, horizon, onAutoFire }: Args
       }
     }
 
-    function dispatchTool(call: CoachToolCall, fire: () => void) {
+    function dispatchTool(call: RawToolCall, fire: () => void) {
       const camStore = useCameraStore.getState();
       const aiStore = useAiStore.getState();
       const sessionStore = useSessionStore.getState();
 
       switch (call.name) {
         case 'adjust_camera': {
+          const input = call.input as AdjustCameraInput;
           const next = clampSettings(
             {
-              iso: call.input.iso ?? camStore.settings.iso,
+              iso: input.iso ?? camStore.settings.iso,
               shutterSeconds:
-                call.input.shutter_seconds ?? camStore.settings.shutterSeconds,
+                input.shutter_seconds ?? camStore.settings.shutterSeconds,
               exposureCompensation:
-                call.input.ev ?? camStore.settings.exposureCompensation,
+                input.ev ?? camStore.settings.exposureCompensation,
               whiteBalanceKelvin:
-                call.input.wb_kelvin ?? camStore.settings.whiteBalanceKelvin,
+                input.wb_kelvin ?? camStore.settings.whiteBalanceKelvin,
             },
             camStore.capabilities,
           );
@@ -152,33 +161,34 @@ export function useOrchestrator({ cameraRef, vision, horizon, onAutoFire }: Args
           return;
         }
 
-        case 'lock_subject':
-          sessionStore.setIntent({
-            ...sessionStore.intent,
-            subject: call.input.description,
-          });
-          aiStore.pushTicker({ kind: 'lock', text: `lock: ${call.input.description}` });
+        case 'lock_subject': {
+          const input = call.input as LockSubjectInput;
+          sessionStore.setIntent({ ...sessionStore.intent, subject: input.description });
+          aiStore.pushTicker({ kind: 'lock', text: `lock: ${input.description}` });
           return;
+        }
 
-        case 'say':
-          aiStore.setLastSay({
-            text: call.input.text,
-            urgency: call.input.urgency ?? 'normal',
-          });
-          aiStore.pushTicker({ kind: 'say', text: call.input.text });
+        case 'say': {
+          const input = call.input as SayInput;
+          aiStore.setLastSay({ text: input.text, urgency: input.urgency ?? 'normal' });
+          aiStore.pushTicker({ kind: 'say', text: input.text });
           return;
+        }
 
-        case 'reframe_hint':
-          aiStore.setReframeHint(call.input);
+        case 'reframe_hint': {
+          const input = call.input as ReframeHintInput;
+          aiStore.setReframeHint(input);
           aiStore.pushTicker({
             kind: 'reframe',
-            text: `${call.input.direction.replace('_', ' ')}`,
+            text: input.direction.replace('_', ' '),
           });
           return;
+        }
 
         case 'shoot_now': {
+          const input = call.input as ShootNowInput;
           if (Date.now() - lastAutoFireRef.current < AUTOFIRE_COOLDOWN_MS) return;
-          aiStore.armAutoFire(AUTOFIRE_RING_MS, call.input.reason);
+          aiStore.armAutoFire(AUTOFIRE_RING_MS, input.reason);
           aiStore.pushTicker({ kind: 'say', text: 'shoot' });
           setTimeout(() => {
             const current = useAiStore.getState().autoFire;
@@ -190,9 +200,11 @@ export function useOrchestrator({ cameraRef, vision, horizon, onAutoFire }: Args
           return;
         }
 
-        case 'wait':
-          aiStore.pushTicker({ kind: 'wait', text: call.input.reason });
+        case 'wait': {
+          const input = call.input as WaitInput;
+          aiStore.pushTicker({ kind: 'wait', text: input.reason });
           return;
+        }
       }
     }
   }, [cameraRef, vision, horizon, onAutoFire]);
