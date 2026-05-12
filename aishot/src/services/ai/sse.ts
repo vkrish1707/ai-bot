@@ -1,3 +1,5 @@
+import type { CoachToolCall } from './tools';
+
 export type SseEvent = {
   event?: string;
   data: string;
@@ -71,5 +73,100 @@ export async function* readTextDeltas(
     if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
       yield evt.delta.text;
     }
+  }
+}
+
+export type CoachStreamEvent =
+  | { kind: 'text'; text: string }
+  | { kind: 'tool'; call: CoachToolCall }
+  | { kind: 'stop'; reason?: string };
+
+type ContentBlockStartEvent = {
+  type: 'content_block_start';
+  index: number;
+  content_block: {
+    type: 'text' | 'tool_use';
+    id?: string;
+    name?: string;
+    input?: unknown;
+  };
+};
+
+type ContentBlockDeltaEvent = {
+  type: 'content_block_delta';
+  index: number;
+  delta:
+    | { type: 'text_delta'; text: string }
+    | { type: 'input_json_delta'; partial_json: string };
+};
+
+type ContentBlockStopEvent = {
+  type: 'content_block_stop';
+  index: number;
+};
+
+type MessageStopEvent = {
+  type: 'message_stop';
+};
+
+type MessageDeltaEvent = {
+  type: 'message_delta';
+  delta: { stop_reason?: string };
+};
+
+export async function* readCoachStream(
+  response: Response,
+): AsyncGenerator<CoachStreamEvent, void> {
+  const blockNames = new Map<number, string>();
+  const blockJson = new Map<number, string>();
+
+  for await (const evt of readClaudeEvents(response)) {
+    if (evt.type === 'content_block_start') {
+      const e = evt as unknown as ContentBlockStartEvent;
+      if (e.content_block.type === 'tool_use' && e.content_block.name) {
+        blockNames.set(e.index, e.content_block.name);
+        blockJson.set(e.index, '');
+      }
+    } else if (evt.type === 'content_block_delta') {
+      const e = evt as unknown as ContentBlockDeltaEvent;
+      if (e.delta.type === 'text_delta') {
+        yield { kind: 'text', text: e.delta.text };
+      } else if (e.delta.type === 'input_json_delta') {
+        const prev = blockJson.get(e.index) ?? '';
+        blockJson.set(e.index, prev + e.delta.partial_json);
+      }
+    } else if (evt.type === 'content_block_stop') {
+      const e = evt as unknown as ContentBlockStopEvent;
+      const name = blockNames.get(e.index);
+      const json = blockJson.get(e.index);
+      blockNames.delete(e.index);
+      blockJson.delete(e.index);
+      if (name && json !== undefined) {
+        const parsed = safeParseJson(json);
+        if (parsed !== undefined) {
+          yield {
+            kind: 'tool',
+            call: { name, input: parsed } as unknown as CoachToolCall,
+          };
+        }
+      }
+    } else if (evt.type === 'message_delta') {
+      const e = evt as unknown as MessageDeltaEvent;
+      if (e.delta?.stop_reason) {
+        yield { kind: 'stop', reason: e.delta.stop_reason };
+      }
+    } else if (evt.type === 'message_stop') {
+      const _e = evt as unknown as MessageStopEvent;
+      void _e;
+    }
+  }
+}
+
+function safeParseJson(s: string): unknown {
+  if (!s) return {};
+  try {
+    return JSON.parse(s);
+  } catch {
+    return undefined;
   }
 }

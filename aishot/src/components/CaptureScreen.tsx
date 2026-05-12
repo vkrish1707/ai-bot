@@ -1,24 +1,25 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Camera,
-  useCameraDevice,
-} from 'react-native-vision-camera';
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import { useCameraPermissions } from '@/services/camera/useCameraPermissions';
 import {
   capabilitiesFromFormat,
   selectBestPhotoFormat,
 } from '@/services/camera/CameraService';
+import { useAnimatedSettings } from '@/services/camera/useAnimatedSettings';
 import { useCameraStore } from '@/stores/cameraStore';
 import { useVisionFeatures } from '@/services/vision/useVisionFeatures';
 import { useHorizon } from '@/services/sensors/useHorizon';
+import { useOrchestrator } from '@/services/orchestrator/useOrchestrator';
 import { AutoPilotPill } from './CameraControls/AutoPilotPill';
 import { ManualDials } from './CameraControls/ManualDials';
 import { ModeToggle } from './CameraControls/ModeToggle';
 import { ShutterButton } from './CameraControls/ShutterButton';
 import { SkiaOverlay } from './SkiaOverlay/SkiaOverlay';
 import { DebugHud } from './SkiaOverlay/DebugHud';
+import { AdjustmentTicker } from './Hud/AdjustmentTicker';
+import { IntentChip } from './Hud/IntentChip';
 
 export function CaptureScreen() {
   const permissions = useCameraPermissions();
@@ -31,10 +32,23 @@ export function CaptureScreen() {
   const format = useMemo(() => selectBestPhotoFormat(device), [device]);
   const { frameProcessor, shared } = useVisionFeatures();
   const horizon = useHorizon();
+  const animated = useAnimatedSettings();
 
   useEffect(() => {
     if (format) setCapabilities(capabilitiesFromFormat(format));
   }, [format, setCapabilities]);
+
+  const handleCapture = useCallback(async () => {
+    if (!cameraRef.current) return;
+    await cameraRef.current.takePhoto({ enableShutterSound: false });
+  }, []);
+
+  useOrchestrator({
+    cameraRef,
+    vision: shared,
+    horizon,
+    onAutoFire: handleCapture,
+  });
 
   if (!permissions.ready) {
     return <PermissionGate state={permissions} />;
@@ -47,13 +61,6 @@ export function CaptureScreen() {
       </View>
     );
   }
-
-  const handleCapture = async () => {
-    if (!cameraRef.current) return;
-    await cameraRef.current.takePhoto({
-      enableShutterSound: false,
-    });
-  };
 
   return (
     <View style={styles.root}>
@@ -75,6 +82,7 @@ export function CaptureScreen() {
         frameSize={shared.frameSize}
         horizon={horizon}
       />
+      <AdjustmentTicker />
       <DebugHud
         fps={shared.fps}
         faces={shared.faces}
@@ -85,10 +93,11 @@ export function CaptureScreen() {
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <View style={styles.topRow}>
           <ModeToggle />
+          <IntentChip />
           <AutoPilotPill />
         </View>
         <View style={styles.bottom}>
-          <ManualDials />
+          <ManualDials animated={animated} />
           <View style={styles.shutterRow}>
             <View style={styles.sidePlaceholder} />
             <ShutterButton onPress={handleCapture} />
@@ -123,6 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
+    gap: 8,
   },
   bottom: { paddingBottom: 8 },
   shutterRow: {
@@ -131,7 +141,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 32,
   },
-  sidePlaceholder: { width: 76 },
+  sidePlaceholder: { width: 92 },
   center: {
     flex: 1,
     alignItems: 'center',
