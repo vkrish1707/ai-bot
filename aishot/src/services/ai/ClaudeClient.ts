@@ -1,6 +1,6 @@
 import { PROXY_URL } from './config';
 import { clearProxyToken, getProxyToken } from './deviceToken';
-import { readTextDeltas } from './sse';
+import { readCoachStream, readTextDeltas, type CoachStreamEvent } from './sse';
 import type {
   Budget,
   ChatMessage,
@@ -47,16 +47,23 @@ export class ClaudeClient {
     return readTextDeltas(res);
   }
 
-  async streamCoach(args: CoachArgs): Promise<AsyncIterable<string>> {
-    const res = await this.post('/v1/coach', {
-      session_id: args.sessionId,
-      intent: args.intent,
-      features: args.features,
-      tracker: args.tracker,
-      image_base64: args.imageBase64,
-      last_messages: args.lastMessages,
-    });
-    return readTextDeltas(res);
+  async streamCoach(
+    args: CoachArgs,
+    signal?: AbortSignal,
+  ): Promise<AsyncIterable<CoachStreamEvent>> {
+    const res = await this.post(
+      '/v1/coach',
+      {
+        session_id: args.sessionId,
+        intent: args.intent,
+        features: args.features,
+        tracker: args.tracker,
+        image_base64: args.imageBase64,
+        last_messages: args.lastMessages,
+      },
+      signal,
+    );
+    return readCoachStream(res);
   }
 
   async streamCritique(args: CritiqueArgs): Promise<AsyncIterable<string>> {
@@ -86,7 +93,11 @@ export class ClaudeClient {
     await clearProxyToken();
   }
 
-  private async post(path: string, body: unknown): Promise<Response> {
+  private async post(
+    path: string,
+    body: unknown,
+    signal?: AbortSignal,
+  ): Promise<Response> {
     const token = await getProxyToken();
     const res = await fetch(`${PROXY_URL}${path}`, {
       method: 'POST',
@@ -96,6 +107,7 @@ export class ClaudeClient {
         Accept: 'text/event-stream',
       },
       body: JSON.stringify(body),
+      signal,
     });
     if (res.status === 401) {
       await clearProxyToken();

@@ -5,6 +5,7 @@ import { checkBudget, checkRateLimit } from '../cost-guard';
 import { coachBody } from '../schemas';
 import { COACH_TOOLS_HINT, PERSONA_SYSTEM, renderIntent } from '../prompts';
 import { relayAnthropic } from '../anthropic';
+import { COACH_TOOLS } from '../tools';
 
 export const coachRoute = new Hono<AppEnv>();
 
@@ -43,7 +44,7 @@ coachRoute.post('/', async (c) => {
 
   return relayAnthropic(c, {
     model: c.env.DEFAULT_MODEL,
-    max_tokens: 256,
+    max_tokens: 384,
     system: [
       {
         type: 'text',
@@ -51,6 +52,7 @@ coachRoute.post('/', async (c) => {
         cache_control: { type: 'ephemeral' },
       },
     ],
+    tools: COACH_TOOLS as unknown as unknown[],
     messages: [
       ...previous,
       {

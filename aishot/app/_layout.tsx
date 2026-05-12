@@ -11,7 +11,13 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: '#000' },
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="modal/intent"
+          options={{ presentation: 'modal', headerShown: false }}
+        />
+      </Stack>
     </GestureHandlerRootView>
   );
 }

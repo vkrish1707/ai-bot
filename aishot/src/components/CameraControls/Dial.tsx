@@ -1,21 +1,49 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 type DialProps = {
   label: string;
-  value: string;
+  format: (n: number) => string;
+  value: SharedValue<number>;
   isLocked: boolean;
   onLockToggle: () => void;
   min: number;
   max: number;
-  current: number;
 };
 
-export function Dial({ label, value, isLocked, onLockToggle, min, max, current }: DialProps) {
-  const fillPct = useMemo(() => {
-    if (max <= min) return 0;
-    return Math.min(1, Math.max(0, (current - min) / (max - min)));
-  }, [current, min, max]);
+const SAMPLE_INTERVAL_MS = 33;
+
+export function Dial({
+  label,
+  format,
+  value,
+  isLocked,
+  onLockToggle,
+  min,
+  max,
+}: DialProps) {
+  const [displayText, setDisplayText] = useState(() => format(value.value));
+
+  useAnimatedReaction(
+    () => ({ t: Math.floor(Date.now() / SAMPLE_INTERVAL_MS), v: value.value }),
+    (curr, prev) => {
+      if (prev && curr.t === prev.t) return;
+      runOnJS(setDisplayText)(format(curr.v));
+    },
+    [format],
+  );
+
+  const fillStyle = useAnimatedStyle(() => {
+    const range = Math.max(0.0001, max - min);
+    const pct = Math.min(1, Math.max(0, (value.value - min) / range));
+    return { width: `${pct * 100}%` };
+  });
 
   return (
     <Pressable
@@ -26,9 +54,9 @@ export function Dial({ label, value, isLocked, onLockToggle, min, max, current }
         <Text style={[styles.label, isLocked && styles.locked]}>{label}</Text>
         {isLocked && <Text style={styles.lockBadge}>LOCK</Text>}
       </View>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={styles.value}>{displayText}</Text>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${fillPct * 100}%` }]} />
+        <Animated.View style={[styles.fill, fillStyle]} />
       </View>
     </Pressable>
   );

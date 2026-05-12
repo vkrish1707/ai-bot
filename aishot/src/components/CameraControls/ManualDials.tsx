@@ -1,10 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { useCameraStore } from '@/stores/cameraStore';
 import { formatShutterLabel } from '@/services/camera/CameraService';
+import type { AnimatedSettings } from '@/services/camera/useAnimatedSettings';
 import { Dial } from './Dial';
 
-export function ManualDials() {
-  const settings = useCameraStore((s) => s.settings);
+type Props = {
+  animated: AnimatedSettings;
+};
+
+export function ManualDials({ animated }: Props) {
   const caps = useCameraStore((s) => s.capabilities);
   const lockedParams = useCameraStore((s) => s.lockedParams);
   const toggleLock = useCameraStore((s) => s.toggleLock);
@@ -13,39 +17,39 @@ export function ManualDials() {
     <View style={styles.row}>
       <Dial
         label="ISO"
-        value={String(Math.round(settings.iso))}
+        format={(n) => String(Math.round(n))}
+        value={animated.iso}
         isLocked={lockedParams.has('iso')}
         onLockToggle={() => toggleLock('iso')}
         min={caps.isoRange.min}
         max={caps.isoRange.max}
-        current={settings.iso}
       />
       <Dial
         label="SHUTTER"
-        value={formatShutterLabel(settings.shutterSeconds)}
+        format={formatShutterLabel}
+        value={animated.shutter}
         isLocked={lockedParams.has('shutter')}
         onLockToggle={() => toggleLock('shutter')}
         min={caps.shutterRange.min}
         max={caps.shutterRange.max}
-        current={settings.shutterSeconds}
       />
       <Dial
         label="EV"
-        value={`${settings.exposureCompensation >= 0 ? '+' : ''}${settings.exposureCompensation.toFixed(1)}`}
+        format={(n) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}`}
+        value={animated.ev}
         isLocked={lockedParams.has('ev')}
         onLockToggle={() => toggleLock('ev')}
         min={caps.exposureCompRange.min}
         max={caps.exposureCompRange.max}
-        current={settings.exposureCompensation}
       />
       <Dial
         label="WB"
-        value={`${Math.round(settings.whiteBalanceKelvin)}K`}
+        format={(n) => `${Math.round(n)}K`}
+        value={animated.wb}
         isLocked={lockedParams.has('wb')}
         onLockToggle={() => toggleLock('wb')}
         min={caps.whiteBalanceRange.min}
         max={caps.whiteBalanceRange.max}
-        current={settings.whiteBalanceKelvin}
       />
     </View>
   );
